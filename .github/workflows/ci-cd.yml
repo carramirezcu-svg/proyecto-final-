@@ -25,7 +25,7 @@ jobs:
           cache: "pip"
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt flake8 pip-audit
+        run: pip install -r requirements.txt flake8 pip-audit --break-system-packages
 
       - name: Lint con flake8
         run: |
@@ -148,4 +148,5 @@ jobs:
         run: |
           echo "âœ… Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
           echo "- Imagen: ${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+
 
