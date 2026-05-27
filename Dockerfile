@@ -18,6 +18,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY src/app.py .
 
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
 USER appuser
 
 ENV PORT=5000
