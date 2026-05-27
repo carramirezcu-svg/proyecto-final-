@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.db
+.env
+*.log
+node_modules/
+.coverage
+htmlcov/
+coverage.xml
+test-results.xml
+audit-report.json

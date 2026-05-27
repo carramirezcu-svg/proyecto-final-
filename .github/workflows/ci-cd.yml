@@ -1,0 +1,150 @@
+name: CI/CD Pipeline — To-Do API
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: todo-api
+  REGISTRY: ghcr.io
+
+jobs:
+  # ── 1. Lint & Seguridad ──────────────────────────────────────────────────────
+  lint-and-security:
+    name: Lint & Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt flake8 pip-audit
+
+      - name: Lint con flake8
+        run: |
+          flake8 src/ --max-line-length=120 --exclude=__pycache__ \
+            --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(text)s"
+
+      - name: Auditoría de dependencias (pip-audit)
+        run: pip-audit -r requirements.txt --output=json > audit-report.json || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: audit-report.json
+
+  # ── 2. Tests unitarios + cobertura ─────────────────────────────────────────
+  test:
+    name: Tests unitarios
+    runs-on: ubuntu-latest
+    needs: lint-and-security
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt pytest pytest-cov
+
+      - name: Ejecutar tests con cobertura
+        run: |
+          python -m pytest tests/ -v \
+            --cov=src \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            --junitxml=test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results.xml
+            coverage.xml
+
+  # ── 3. Build imagen Docker ──────────────────────────────────────────────────
+  build:
+    name: Build & push imagen Docker
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login a GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build y push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generar reporte de build
+        run: |
+          echo "## Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagen | \`${{ steps.meta.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Digest | \`${{ steps.build.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rama | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ── 4. Deploy (solo main) ───────────────────────────────────────────────────
+  deploy:
+    name: Deploy a producción
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy con docker-compose
+        run: |
+          echo "🚀 Deploy de imagen: ${{ needs.build.outputs.image_tag }}"
+          echo "En producción real, aquí iría: docker-compose pull && docker-compose up -d"
+          # Ejemplo con SSH:
+          # ssh user@server "docker-compose pull && docker-compose up -d"
+
+      - name: Notificar éxito
+        run: |
+          echo "✅ Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
+          echo "- Imagen: ${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY

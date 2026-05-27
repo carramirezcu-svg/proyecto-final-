@@ -1,0 +1,4 @@
+flask==3.0.0
+prometheus-client==0.20.0
+pytest==8.2.0
+pytest-cov==5.0.0
