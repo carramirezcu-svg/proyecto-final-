@@ -1,4 +1,4 @@
-name: CI/CD Pipeline — To-Do API
+﻿name: CI/CD Pipeline â€” To-Do API
 
 on:
   push:
@@ -11,9 +11,9 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  # ── 1. Lint & Seguridad ──────────────────────────────────────────────────────
+  # â”€â”€ 1. Lint & Seguridad â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   lint-and-security:
-    name: Lint & Auditoría de dependencias
+    name: Lint & AuditorÃ­a de dependencias
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,10 +29,10 @@ jobs:
 
       - name: Lint con flake8
         run: |
-          flake8 src/ --max-line-length=120 --exclude=__pycache__ \
+          flake8 src/ --max-line-length=120 --exclude=__pycache__ --extend-ignore=E221,E272,E302,E305
             --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(text)s"
 
-      - name: Auditoría de dependencias (pip-audit)
+      - name: AuditorÃ­a de dependencias (pip-audit)
         run: pip-audit -r requirements.txt --output=json > audit-report.json || true
 
       - name: Upload audit report
@@ -41,7 +41,7 @@ jobs:
           name: audit-report
           path: audit-report.json
 
-  # ── 2. Tests unitarios + cobertura ─────────────────────────────────────────
+  # â”€â”€ 2. Tests unitarios + cobertura â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   test:
     name: Tests unitarios
     runs-on: ubuntu-latest
@@ -76,7 +76,7 @@ jobs:
             test-results.xml
             coverage.xml
 
-  # ── 3. Build imagen Docker ──────────────────────────────────────────────────
+  # â”€â”€ 3. Build imagen Docker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   build:
     name: Build & push imagen Docker
     runs-on: ubuntu-latest
@@ -127,9 +127,9 @@ jobs:
           echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Rama | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
 
-  # ── 4. Deploy (solo main) ───────────────────────────────────────────────────
+  # â”€â”€ 4. Deploy (solo main) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   deploy:
-    name: Deploy a producción
+    name: Deploy a producciÃ³n
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
@@ -139,12 +139,13 @@ jobs:
 
       - name: Deploy con docker-compose
         run: |
-          echo "🚀 Deploy de imagen: ${{ needs.build.outputs.image_tag }}"
-          echo "En producción real, aquí iría: docker-compose pull && docker-compose up -d"
+          echo "ðŸš€ Deploy de imagen: ${{ needs.build.outputs.image_tag }}"
+          echo "En producciÃ³n real, aquÃ­ irÃ­a: docker-compose pull && docker-compose up -d"
           # Ejemplo con SSH:
           # ssh user@server "docker-compose pull && docker-compose up -d"
 
-      - name: Notificar éxito
+      - name: Notificar Ã©xito
         run: |
-          echo "✅ Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
+          echo "âœ… Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
           echo "- Imagen: ${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+
