@@ -1,4 +1,4 @@
-name: CI/CD Pipeline – To-Do API
+name: CI/CD Pipeline - To-Do API
 
 on:
   push:
@@ -12,7 +12,7 @@ env:
 
 jobs:
   lint-and-security:
-    name: Lint & Auditoría de dependencias
+    name: Lint y Auditoria de dependencias
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
         run: |
           python -m flake8 src/app.py --max-line-length=120 --extend-ignore=E221,E272,E302,E305,W292
 
-      - name: Auditoría de dependencias (pip-audit)
+      - name: Auditoria de dependencias (pip-audit)
         run: pip-audit -r requirements.txt --output=json > audit-report.json || true
 
       - name: Upload audit report
@@ -76,7 +76,7 @@ jobs:
             coverage.xml
 
   build:
-    name: Build & push imagen Docker
+    name: Build y push imagen Docker
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push'
@@ -126,7 +126,7 @@ jobs:
           echo "| Rama | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
 
   deploy:
-    name: Deploy a producción
+    name: Deploy a produccion
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
@@ -136,10 +136,10 @@ jobs:
 
       - name: Deploy con docker-compose
         run: |
-          echo "?? Deploy de imagen: ${{ needs.build.outputs.image_tag }}"
-          echo "En producción real, aquí iría: docker-compose pull && docker-compose up -d"
+          echo "Deploy de imagen: ${{ needs.build.outputs.image_tag }}"
+          echo "En produccion real, aqui iria: docker-compose pull && docker-compose up -d"
 
-      - name: Notificar éxito
+      - name: Notificar exito
         run: |
-          echo "? Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
+          echo "Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
           echo "- Imagen: ${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
