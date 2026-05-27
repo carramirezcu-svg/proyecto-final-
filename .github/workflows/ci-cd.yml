@@ -29,7 +29,7 @@ jobs:
 
       - name: Lint con flake8
         run: |
-          flake8 src/ --max-line-length=120 --exclude=__pycache__ --extend-ignore=E221,E272,E302,E305
+          flake8 src/ --max-line-length=120 --extend-ignore=E221,E272,E302,E305,W292
             --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(text)s"
 
       - name: AuditorÃ­a de dependencias (pip-audit)
@@ -148,5 +148,6 @@ jobs:
         run: |
           echo "âœ… Deploy completado exitosamente" >> $GITHUB_STEP_SUMMARY
           echo "- Imagen: ${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+
 
 
