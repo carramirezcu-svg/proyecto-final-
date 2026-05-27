@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
-# ── Logging estructurado ──────────────────────────────────────────────────────
+
 class JSONFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
@@ -20,15 +20,15 @@ class JSONFormatter(logging.Formatter):
             log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)
 
+
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger("todo_api")
 
-# ── Métricas Prometheus ───────────────────────────────────────────────────────
-REQUEST_COUNT   = Counter("http_requests_total",   "Total HTTP requests",      ["method", "endpoint", "status"])
+REQUEST_COUNT = Counter("http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
 REQUEST_LATENCY = Histogram("http_request_duration_seconds", "Request latency", ["method", "endpoint"])
-TASKS_TOTAL     = Gauge("tasks_total", "Current number of tasks")
+TASKS_TOTAL = Gauge("tasks_total", "Current number of tasks")
 
 app = Flask(__name__)
 APP_START = time.time()
@@ -45,11 +45,11 @@ def init_db():
     conn = get_db()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            title       TEXT NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
             description TEXT DEFAULT '',
-            completed   BOOLEAN DEFAULT 0,
-            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            completed BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
@@ -60,7 +60,6 @@ def init_db():
 init_db()
 
 
-# ── Middleware de métricas ────────────────────────────────────────────────────
 @app.before_request
 def start_timer():
     request._start_time = time.time()
@@ -69,14 +68,13 @@ def start_timer():
 @app.after_request
 def record_metrics(response):
     endpoint = request.path
-    latency  = time.time() - getattr(request, "_start_time", time.time())
+    latency = time.time() - getattr(request, "_start_time", time.time())
     REQUEST_COUNT.labels(request.method, endpoint, response.status_code).inc()
     REQUEST_LATENCY.labels(request.method, endpoint).observe(latency)
     logger.info("request handled", extra={})
     return response
 
 
-# ── Endpoints de operaciones ──────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({"name": "To-Do API", "version": "1.0.0", "endpoints": ["/tasks", "/health", "/metrics"]})
@@ -94,9 +92,9 @@ def health():
         db_status = "error"
 
     status = "healthy" if db_status == "ok" else "unhealthy"
-    code   = 200        if db_status == "ok" else 503
+    code = 200 if db_status == "ok" else 503
     return jsonify({
-        "status":   status,
+        "status": status,
         "database": db_status,
         "uptime_seconds": round(time.time() - APP_START, 2),
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -105,7 +103,6 @@ def health():
 
 @app.route("/metrics", methods=["GET"])
 def metrics():
-    # Actualizar gauge de tareas
     try:
         conn = get_db()
         count = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
@@ -116,7 +113,6 @@ def metrics():
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
-# ── CRUD tasks ────────────────────────────────────────────────────────────────
 @app.route("/tasks", methods=["GET"])
 def list_tasks():
     conn = get_db()
@@ -132,10 +128,10 @@ def create_task():
     if not data or "title" not in data:
         return jsonify({"error": "El campo 'title' es obligatorio"}), 400
 
-    title       = data["title"]
+    title = data["title"]
     description = data.get("description", "")
 
-    conn   = get_db()
+    conn = get_db()
     cursor = conn.execute(
         "INSERT INTO tasks (title, description) VALUES (?, ?)",
         (title, description),
@@ -170,9 +166,9 @@ def update_task(task_id):
         conn.close()
         return jsonify({"error": "Tarea no encontrada"}), 404
 
-    title       = data.get("title",       task["title"])
+    title = data.get("title", task["title"])
     description = data.get("description", task["description"])
-    completed   = data.get("completed",   task["completed"])
+    completed = data.get("completed", task["completed"])
 
     conn.execute(
         "UPDATE tasks SET title=?, description=?, completed=? WHERE id=?",
